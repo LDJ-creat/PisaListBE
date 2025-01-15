@@ -1,0 +1,749 @@
+basePath: /api/v1
+definitions:
+  model.SharedWish:
+    description: 用户分享到社区的心愿信息
+    properties:
+      created_at:
+        example: "2024-01-10T15:04:05Z"
+        type: string
+      deleted_at:
+        example: "2024-01-10T15:04:05Z"
+        type: string
+      description:
+        example: 想去看看世界的每个角落
+        type: string
+      event:
+        example: 环游世界
+        type: string
+      id:
+        example: 1
+        type: integer
+      original_wish_id:
+        example: 1
+        type: integer
+      shared_by_user_id:
+        example: 1
+        type: integer
+      updated_at:
+        example: "2024-01-10T15:04:05Z"
+        type: string
+    type: object
+  model.Task:
+    description: Task model represents a todo item in the system
+    properties:
+      completed:
+        description: Completed indicates if the task is done
+        example: false
+        type: boolean
+      completed_date:
+        description: CompletedDate records when the task was completed
+        example: "2025-01-10T15:04:05Z"
+        type: string
+      createdAt:
+        type: string
+      deletedAt:
+        type: string
+      description:
+        description: Description provides additional details about the task
+        example: Milk, eggs, bread
+        type: string
+      event:
+        description: Event is the main task description
+        example: Buy groceries
+        type: string
+      id:
+        type: integer
+      importance_level:
+        description: ImportanceLevel indicates task priority (0-5)
+        example: 3
+        type: integer
+      is_cycle:
+        description: IsCycle indicates if the task is recurring
+        example: false
+        type: boolean
+      updatedAt:
+        type: string
+      user_id:
+        description: UserID is the owner of the task
+        example: 1
+        type: integer
+    type: object
+  model.Wish:
+    description: 用户的心愿信息
+    properties:
+      created_at:
+        example: "2024-01-10T15:04:05Z"
+        type: string
+      deleted_at:
+        example: "2024-01-10T15:04:05Z"
+        type: string
+      description:
+        example: 想去看看世界的每个角落
+        type: string
+      event:
+        example: 环游世界
+        type: string
+      id:
+        example: 1
+        type: integer
+      is_cycle:
+        example: false
+        type: boolean
+      is_shared:
+        example: false
+        type: boolean
+      updated_at:
+        example: "2024-01-10T15:04:05Z"
+        type: string
+      user_id:
+        example: 1
+        type: integer
+    type: object
+  v1.TaskRequest:
+    properties:
+      description:
+        example: Milk, eggs, bread
+        type: string
+      event:
+        example: Buy groceries
+        type: string
+      importance_level:
+        example: 3
+        maximum: 5
+        minimum: 0
+        type: integer
+      is_cycle:
+        example: false
+        type: boolean
+    required:
+    - event
+    type: object
+  v1.UserRequest:
+    description: 用户注册请求的数据结构
+    properties:
+      email:
+        example: john@example.com
+        type: string
+      password:
+        example: password123
+        minLength: 6
+        type: string
+      username:
+        example: johndoe
+        maxLength: 32
+        minLength: 3
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  v1.WishRequest:
+    description: 创建或更新心愿的请求数据结构
+    properties:
+      description:
+        example: 想去看看世界的每个角落
+        type: string
+      event:
+        example: 环游世界
+        type: string
+      is_cycle:
+        example: false
+        type: boolean
+    required:
+    - event
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: PisaList 是一个待办事项和心愿清单管理系统
+  title: PisaList API
+  version: "1.0"
+paths:
+  /login:
+    post:
+      consumes:
+      - application/json
+      description: 用户登录并获取JWT令牌
+      parameters:
+      - description: 登录凭证
+        in: body
+        name: credentials
+        required: true
+        schema:
+          properties:
+            password:
+              type: string
+            username:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功返回token和用户信息
+          schema:
+            properties:
+              token:
+                type: string
+              user:
+                properties:
+                  email:
+                    type: string
+                  id:
+                    type: integer
+                  username:
+                    type: string
+                type: object
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: 用户名或密码错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 用户登录
+      tags:
+      - users
+  /register:
+    post:
+      consumes:
+      - application/json
+      description: 创建新用户账号
+      parameters:
+      - description: 用户注册信息
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/v1.UserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 注册成功
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 用户注册
+      tags:
+      - users
+  /tasks:
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的任务
+      parameters:
+      - description: 任务信息
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/v1.TaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Task'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 创建任务
+      tags:
+      - tasks
+  /tasks/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 根据ID删除任务
+      parameters:
+      - description: 任务ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 删除任务
+      tags:
+      - tasks
+    put:
+      consumes:
+      - application/json
+      description: 更新任务信息
+      parameters:
+      - description: 任务ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新后的任务信息
+        in: body
+        name: task
+        required: true
+        schema:
+          $ref: '#/definitions/v1.TaskRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Task'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 更新任务
+      tags:
+      - tasks
+  /tasks/{id}/complete:
+    put:
+      consumes:
+      - application/json
+      description: 标记任务为已完成
+      parameters:
+      - description: 任务ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Task'
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 完成任务
+      tags:
+      - tasks
+  /tasks/{id}/importance:
+    put:
+      consumes:
+      - application/json
+      description: 更新任务的重要性级别
+      parameters:
+      - description: 任务ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 新的优先级
+        in: body
+        name: importance
+        required: true
+        schema:
+          properties:
+            importance_level:
+              type: integer
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.Task'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: Not Found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 更新任务优先级
+      tags:
+      - tasks
+  /tasks/timeline:
+    get:
+      consumes:
+      - application/json
+      description: 获取过去7天完成的任务
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Task'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取任务时间线
+      tags:
+      - tasks
+  /tasks/today:
+    get:
+      consumes:
+      - application/json
+      description: 获取今天需要完成的任务
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/model.Task'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取今日任务
+      tags:
+      - tasks
+  /wishes:
+    get:
+      consumes:
+      - application/json
+      description: 获取当前用户的所有心愿
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 心愿列表
+          schema:
+            items:
+              $ref: '#/definitions/model.Wish'
+            type: array
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取用户心愿列表
+      tags:
+      - wishes
+    post:
+      consumes:
+      - application/json
+      description: 创建一个新的心愿
+      parameters:
+      - description: 心愿信息
+        in: body
+        name: wish
+        required: true
+        schema:
+          $ref: '#/definitions/v1.WishRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 创建成功返回心愿信息
+          schema:
+            $ref: '#/definitions/model.Wish'
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 创建心愿
+      tags:
+      - wishes
+  /wishes/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: 删除指定的心愿
+      parameters:
+      - description: 心愿ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 删除成功
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: 心愿不存在
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 删除心愿
+      tags:
+      - wishes
+    put:
+      consumes:
+      - application/json
+      description: 更新指定心愿的信息
+      parameters:
+      - description: 心愿ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: 更新的心愿信息
+        in: body
+        name: wish
+        required: true
+        schema:
+          $ref: '#/definitions/v1.WishRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 更新成功返回心愿信息
+          schema:
+            $ref: '#/definitions/model.Wish'
+        "400":
+          description: 请求参数错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: 心愿不存在
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 更新心愿
+      tags:
+      - wishes
+  /wishes/{id}/share:
+    post:
+      consumes:
+      - application/json
+      description: 将心愿分享到心愿社区
+      parameters:
+      - description: 心愿ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 分享成功
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: 心愿不存在
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 分享心愿
+      tags:
+      - wishes
+  /wishes/community:
+    get:
+      consumes:
+      - application/json
+      description: 获取所有已分享的心愿
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 分享的心愿列表
+          schema:
+            items:
+              $ref: '#/definitions/model.SharedWish'
+            type: array
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取心愿社区列表
+      tags:
+      - wishes
+  /wishes/random:
+    get:
+      consumes:
+      - application/json
+      description: 从心愿社区中随机获取一个心愿
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 随机心愿
+          schema:
+            $ref: '#/definitions/model.SharedWish'
+        "404":
+          description: 暂无共享心愿
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: 服务器内部错误
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: 获取随机心愿
+      tags:
+      - wishes
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
