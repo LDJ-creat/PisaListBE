@@ -51,7 +51,7 @@ func CreateTask(c *gin.Context) {
 		ImportanceLevel: req.ImportanceLevel,
 	}
 
-	if err := database.DB.Create(&task).Error; err != nil {
+	if err := database.GormDB.Create(&task).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建任务失败"})
 		return
 	}
@@ -75,12 +75,12 @@ func DeleteTask(c *gin.Context) {
 	taskID := c.Param("id")
 
 	var task model.Task
-	if err := database.DB.Where("id = ? AND user_id = ?", taskID, userID).First(&task).Error; err != nil {
+	if err := database.GormDB.Where("id = ? AND user_id = ?", taskID, userID).First(&task).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "任务不存在"})
 		return
 	}
 
-	if err := database.DB.Delete(&task).Error; err != nil {
+	if err := database.GormDB.Delete(&task).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除任务失败"})
 		return
 	}
@@ -112,7 +112,7 @@ func UpdateTask(c *gin.Context) {
 	}
 
 	var task model.Task
-	if err := database.DB.Where("id = ? AND user_id = ?", taskID, userID).First(&task).Error; err != nil {
+	if err := database.GormDB.Where("id = ? AND user_id = ?", taskID, userID).First(&task).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "任务不存在"})
 		return
 	}
@@ -124,7 +124,7 @@ func UpdateTask(c *gin.Context) {
 		// "importance_level": req.ImportanceLevel,
 	}
 
-	if err := database.DB.Model(&task).Updates(updates).Error; err != nil {
+	if err := database.GormDB.Model(&task).Updates(updates).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新任务失败"})
 		return
 	}
@@ -148,7 +148,7 @@ func CompleteTask(c *gin.Context) {
 	taskID := c.Param("id")
 
 	var task model.Task
-	if err := database.DB.Where("id = ? AND user_id = ?", taskID, userID).First(&task).Error; err != nil {
+	if err := database.GormDB.Where("id = ? AND user_id = ?", taskID, userID).First(&task).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "任务不存在"})
 		return
 	}
@@ -166,13 +166,13 @@ func CompleteTask(c *gin.Context) {
 		updates["completed_date"] = nil // 取消完成时清空完成日期
 	}
 
-	if err := database.DB.Model(&task).Updates(updates).Error; err != nil {
+	if err := database.GormDB.Model(&task).Updates(updates).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新任务状态失败"})
 		return
 	}
 
 	// 重新获取更新后的任务信息
-	if err := database.DB.First(&task, task.ID).Error; err != nil {
+	if err := database.GormDB.First(&task, task.ID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取更新后的任务失败"})
 		return
 	}
@@ -198,7 +198,7 @@ func UpdateTaskImportance(c *gin.Context) {
 	taskID := c.Param("id")
 
 	var req struct {
-		ImportanceLevel int `json:"importance_level" binding:"required,min=0,max=5"`
+		ImportanceLevel int `json:"importance_level" binding:"required,min=0"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -207,12 +207,12 @@ func UpdateTaskImportance(c *gin.Context) {
 	}
 
 	var task model.Task
-	if err := database.DB.Where("id = ? AND user_id = ?", taskID, userID).First(&task).Error; err != nil {
+	if err := database.GormDB.Where("id = ? AND user_id = ?", taskID, userID).First(&task).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "任务不存在"})
 		return
 	}
 
-	if err := database.DB.Model(&task).Update("importance_level", req.ImportanceLevel).Error; err != nil {
+	if err := database.GormDB.Model(&task).Update("importance_level", req.ImportanceLevel).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新任务优先级失败"})
 		return
 	}
@@ -234,7 +234,7 @@ func GetTaskTimeline(c *gin.Context) {
 	sevenDaysAgo := time.Now().AddDate(0, 0, -7) //计算出七天前的日期。这两个变量将用于后续的数据库查询。
 
 	var tasks []model.Task
-	if err := database.DB.Where("user_id = ? AND completed = ? AND completed_date >= ?",
+	if err := database.GormDB.Where("user_id = ? AND completed = ? AND completed_date >= ?",
 		userID, true, sevenDaysAgo).
 		Order("completed_date desc").
 		Find(&tasks).Error; err != nil {
@@ -259,7 +259,7 @@ func GetTodayTasks(c *gin.Context) {
 	today := time.Now().Format("2006-01-02")
 
 	var tasks []model.Task
-	if err := database.DB.Where(
+	if err := database.GormDB.Where(
 		"user_id = ? AND (completed = false OR (completed = true AND DATE(completed_date) = ?) OR (completed = true AND is_cycle = true))",
 		userID,
 		today,
@@ -284,7 +284,7 @@ func GetUserTasks(c *gin.Context) {
 	userID := c.GetUint("userID")
 
 	var tasks []model.Task
-	if err := database.DB.Where("user_id = ?", userID).Find(&tasks).Error; err != nil {
+	if err := database.GormDB.Where("user_id = ?", userID).Find(&tasks).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取用户任务失败"})
 		return
 	}

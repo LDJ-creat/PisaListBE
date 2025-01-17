@@ -13,7 +13,7 @@ database:
 
 jwt:
   secret: your_jwt_secret_key
-  expire: 24 # hours
+  expire: 168 # hours (7 days)
 
 redis:
   host: localhost

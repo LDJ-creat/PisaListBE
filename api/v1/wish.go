@@ -48,7 +48,7 @@ func CreateWish(c *gin.Context) {
 		IsShared:    false,
 	}
 
-	if err := database.DB.Create(&wish).Error; err != nil {
+	if err := database.GormDB.Create(&wish).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建心愿失败"})
 		return
 	}
@@ -72,12 +72,12 @@ func DeleteWish(c *gin.Context) {
 	wishID := c.Param("id")
 
 	var wish model.Wish
-	if err := database.DB.Where("id = ? AND user_id = ?", wishID, userID).First(&wish).Error; err != nil {
+	if err := database.GormDB.Where("id = ? AND user_id = ?", wishID, userID).First(&wish).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "心愿不存在"})
 		return
 	}
 
-	if err := database.DB.Delete(&wish).Error; err != nil {
+	if err := database.GormDB.Delete(&wish).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "删除心愿失败"})
 		return
 	}
@@ -109,7 +109,7 @@ func UpdateWish(c *gin.Context) {
 	}
 
 	var wish model.Wish
-	if err := database.DB.Where("id = ? AND user_id = ?", wishID, userID).First(&wish).Error; err != nil {
+	if err := database.GormDB.Where("id = ? AND user_id = ?", wishID, userID).First(&wish).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "心愿不存在"})
 		return
 	}
@@ -120,7 +120,7 @@ func UpdateWish(c *gin.Context) {
 		"is_cycle":    req.IsCycle,
 	}
 
-	if err := database.DB.Model(&wish).Updates(updates).Error; err != nil {
+	if err := database.GormDB.Model(&wish).Updates(updates).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新心愿失败"})
 		return
 	}
@@ -144,7 +144,7 @@ func ShareWish(c *gin.Context) {
 	wishID := c.Param("id")
 
 	var wish model.Wish
-	if err := database.DB.Where("id = ? AND user_id = ?", wishID, userID).First(&wish).Error; err != nil {
+	if err := database.GormDB.Where("id = ? AND user_id = ?", wishID, userID).First(&wish).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "心愿不存在"})
 		return
 	}
@@ -156,12 +156,12 @@ func ShareWish(c *gin.Context) {
 		SharedByUserID: userID,
 	}
 
-	if err := database.DB.Create(&sharedWish).Error; err != nil {
+	if err := database.GormDB.Create(&sharedWish).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "分享心愿失败"})
 		return
 	}
 
-	if err := database.DB.Model(&wish).Update("is_shared", true).Error; err != nil {
+	if err := database.GormDB.Model(&wish).Update("is_shared", true).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新心愿分享状态失败"})
 		return
 	}
@@ -182,7 +182,7 @@ func GetUserWishes(c *gin.Context) {
 	userID := c.GetUint("userID")
 
 	var wishes []model.Wish
-	if err := database.DB.Where("user_id = ?", userID).Find(&wishes).Error; err != nil {
+	if err := database.GormDB.Where("user_id = ?", userID).Find(&wishes).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取心愿列表失败"})
 		return
 	}
@@ -200,7 +200,7 @@ func GetUserWishes(c *gin.Context) {
 // @Router /wishes/community [get]
 func GetCommunityWishes(c *gin.Context) {
 	var sharedWishes []model.SharedWish
-	if err := database.DB.Find(&sharedWishes).Error; err != nil {
+	if err := database.GormDB.Find(&sharedWishes).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取心愿社区失败"})
 		return
 	}
@@ -219,7 +219,7 @@ func GetCommunityWishes(c *gin.Context) {
 // @Router /wishes/random [get]
 func GetRandomWish(c *gin.Context) {
 	var count int64
-	if err := database.DB.Model(&model.SharedWish{}).Count(&count).Error; err != nil {
+	if err := database.GormDB.Model(&model.SharedWish{}).Count(&count).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取心愿数量失败"})
 		return
 	}
@@ -231,7 +231,7 @@ func GetRandomWish(c *gin.Context) {
 
 	offset := rand.Int63n(count)
 	var wish model.SharedWish
-	if err := database.DB.Offset(int(offset)).First(&wish).Error; err != nil {
+	if err := database.GormDB.Offset(int(offset)).First(&wish).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "获取随机心愿失败"})
 		return
 	}

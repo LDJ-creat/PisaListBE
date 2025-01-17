@@ -13,8 +13,8 @@ func InitRouter(r *gin.Engine) {
 	api := r.Group("/api/v1")
 	{
 		// 公开路由 - 不需要 JWT 验证
-		api.POST("/user/register", v1.Register)
-		api.POST("/user/login", v1.Login)
+		api.POST("/register", v1.Register)
+		api.POST("/login", v1.Login)
 		api.GET("/wishes/community", v1.GetCommunityWishes)
 		api.GET("/wishes/random", v1.GetRandomWish)
 

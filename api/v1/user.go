@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/PisaListBE/internal/model"
@@ -41,7 +42,7 @@ func Register(c *gin.Context) {
 
 	// 检查用户名是否已存在
 	var existingUser model.User
-	if err := database.DB.Where("username = ?", req.Username).First(&existingUser).Error; err == nil {
+	if err := database.GormDB.Where("username = ?", req.Username).First(&existingUser).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "用户名已存在"})
 		return
 	}
@@ -59,7 +60,9 @@ func Register(c *gin.Context) {
 		Email:    req.Email,
 	}
 
-	if err := database.DB.Create(&user).Error; err != nil {
+	if err := database.GormDB.Create(&user).Error; err != nil {
+		// 添加详细的错误日志
+		fmt.Printf("创建用户失败: %v\n", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "创建用户失败"})
 		return
 	}
@@ -104,7 +107,7 @@ func Login(c *gin.Context) {
 	}
 
 	var user model.User
-	if err := database.DB.Where("username = ?", req.Username).First(&user).Error; err != nil {
+	if err := database.GormDB.Where("username = ?", req.Username).First(&user).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "用户名或密码错误"})
 		return
 	}
