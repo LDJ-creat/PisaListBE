@@ -180,46 +180,6 @@ func CompleteTask(c *gin.Context) {
 	c.JSON(http.StatusOK, task)
 }
 
-// @Summary 更新任务优先级
-// @Description 更新任务的重要性级别
-// @Tags tasks
-// @Accept json
-// @Produce json
-// @Security ApiKeyAuth
-// @Param id path string true "任务ID"
-// @Param importance body object{importance_level=int} true "新的优先级"
-// @Success 200 {object} model.Task
-// @Failure 400 {object} map[string]string
-// @Failure 404 {object} map[string]string
-// @Failure 500 {object} map[string]string
-// @Router /tasks/{id}/importance [put]
-func UpdateTaskImportance(c *gin.Context) {
-	userID := c.GetUint("userID")
-	taskID := c.Param("id")
-
-	var req struct {
-		ImportanceLevel int `json:"importance_level" binding:"required,min=0"`
-	}
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	var task model.Task
-	if err := database.GormDB.Where("id = ? AND user_id = ?", taskID, userID).First(&task).Error; err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "任务不存在"})
-		return
-	}
-
-	if err := database.GormDB.Model(&task).Update("importance_level", req.ImportanceLevel).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新任务优先级失败"})
-		return
-	}
-
-	c.JSON(http.StatusOK, task)
-}
-
 // @Summary 获取任务时间线
 // @Description 获取过去7天完成的任务
 // @Tags tasks
@@ -290,4 +250,61 @@ func GetUserTasks(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, tasks)
+}
+
+// @Summary 批量更新任务优先级
+// @Description 批量更新多个任务的重要性级别
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Security ApiKeyAuth
+// @Param tasks body object{tasks=array[object{id=int,importance_level=int}]} true "任务优先级列表"
+// @Success 200 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /tasks/importance [put]
+func UpdateTasksImportance(c *gin.Context) {
+	userID := c.GetUint("userID")
+
+	var req struct {
+		Tasks []struct {
+			ID              int `json:"id"`
+			ImportanceLevel int `json:"importance_level" binding:"min=0"`
+		} `json:"tasks" binding:"required"`
+	}
+
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// 开始事务
+	tx := database.GormDB.Begin()
+
+	for _, taskUpdate := range req.Tasks {
+		// 验证任务归属权并更新
+		result := tx.Model(&model.Task{}).
+			Where("id = ? AND user_id = ?", taskUpdate.ID, userID).
+			Update("importance_level", taskUpdate.ImportanceLevel)
+
+		if result.Error != nil {
+			tx.Rollback()
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "更新任务优先级失败"})
+			return
+		}
+
+		if result.RowsAffected == 0 {
+			tx.Rollback()
+			c.JSON(http.StatusBadRequest, gin.H{"error": "任务不存在或无权限更新"})
+			return
+		}
+	}
+
+	// 提交事务
+	if err := tx.Commit().Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "更新任务优先级失败"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "更新成功"})
 }

@@ -28,8 +28,8 @@ func InitRouter(r *gin.Engine) {
 			auth.GET("/tasks/timeline", v1.GetTaskTimeline)
 			auth.PUT("/tasks/:id", v1.UpdateTask)
 			auth.DELETE("/tasks/:id", v1.DeleteTask)
-			auth.PUT("/tasks/:id/importance", v1.UpdateTaskImportance)
 			auth.PUT("/tasks/:id/complete", v1.CompleteTask)
+			auth.PUT("/tasks/importance", v1.UpdateTasksImportance)
 
 			// 需要验证的心愿相关路由
 			auth.POST("/wishes", v1.CreateWish)
